@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, fetchAll } from '@/lib/supabase'
 import { fmtKES, fmt, CCR3_COLORS, PF_COLORS } from '@/lib/utils'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -13,14 +13,12 @@ interface Props {
 }
 
 async function getStoreData(store: string) {
-  const [refundsRes, pfRes, plansRes] = await Promise.all([
-    supabase.from('refunds').select('*').eq('store', store).range(0, 9999),
-    supabase.from('product_failures').select('*').eq('store', store).range(0, 9999),
+  const [refunds, pfs, plansRes] = await Promise.all([
+    fetchAll('refunds', '*', [{ column: 'store', value: store }]),
+    fetchAll('product_failures', '*', [{ column: 'store', value: store }]),
     supabase.from('action_plans').select('*').eq('store', store).order('priority').order('id'),
   ])
 
-  const refunds = refundsRes.data ?? []
-  const pfs = pfRes.data ?? []
   const plans = (plansRes.data ?? []) as ActionPlan[]
 
   const totalRefunds = refunds.length

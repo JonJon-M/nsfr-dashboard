@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, fetchAll } from '@/lib/supabase'
 import { fmtKES, fmt } from '@/lib/utils'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -8,14 +8,11 @@ import Link from 'next/link'
 export const revalidate = 60
 
 async function getOverviewData() {
-  const [refundsRes, pfRes, batchesRes] = await Promise.all([
-    supabase.from('refunds').select('store, ccr3, refund_and_comp, week').range(0, 9999),
-    supabase.from('product_failures').select('store, pf_root_cause, week').range(0, 9999),
+  const [refunds, pfs, batchesRes] = await Promise.all([
+    fetchAll('refunds', 'store, ccr3, refund_and_comp, week'),
+    fetchAll('product_failures', 'store, pf_root_cause, week'),
     supabase.from('upload_batches').select('*').order('uploaded_at', { ascending: false }).limit(1),
   ])
-
-  const refunds = refundsRes.data ?? []
-  const pfs = pfRes.data ?? []
 
   const stores = ['NBOF1 - TimauRd', 'NBOF3 - Safari'] as const
 
