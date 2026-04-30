@@ -9,8 +9,8 @@ export const revalidate = 60
 
 async function getOverviewData() {
   const [refundsRes, pfRes, batchesRes] = await Promise.all([
-    supabase.from('refunds').select('store, ccr3, refund_and_comp, week'),
-    supabase.from('product_failures').select('store, pf_root_cause, week'),
+    supabase.from('refunds').select('store, ccr3, refund_and_comp, week').range(0, 9999),
+    supabase.from('product_failures').select('store, pf_root_cause, week').range(0, 9999),
     supabase.from('upload_batches').select('*').order('uploaded_at', { ascending: false }).limit(1),
   ])
 
@@ -87,7 +87,7 @@ export default async function OverviewPage() {
         <StatCard label="Total nSFR Incidents" value={fmt(totalRefunds + totalPF)} sub="Refunds + PF combined" color="red" />
         <StatCard label="Refund Incidents" value={fmt(totalRefunds)} sub="Customer-reported failures" color="orange" />
         <StatCard label="Product Failures" value={fmt(totalPF)} sub="Pick-level failures" color="purple" />
-        <StatCard label="Total Financial Loss" value={fmtKES(totalAmount)} sub="Refunds + Compensation" color="blue" />
+        <StatCard label="Total Financial Loss" value={fmtKES(totalAmount)} sub="Refunds + Compensation (EUR)" color="blue" />
       </div>
 
       <Card>

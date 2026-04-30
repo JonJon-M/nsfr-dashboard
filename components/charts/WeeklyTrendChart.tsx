@@ -19,7 +19,7 @@ export function WeeklyTrendChart({ data }: Props) {
         <Tooltip
           formatter={(value, name) => {
             const v = Number(value)
-            if (name === 'amount') return [`KES ${v.toFixed(2)}`, 'Refund Cost']
+            if (name === 'amount') return [`€${v.toFixed(2)}`, 'Refund Cost']
             return [v, name === 'refunds' ? 'Refund Incidents' : 'PF Incidents']
           }}
           labelFormatter={l => `Week ${l}`}
@@ -27,7 +27,7 @@ export function WeeklyTrendChart({ data }: Props) {
         <Legend />
         <Bar yAxisId="left" dataKey="refunds" name="Refunds" fill="#ef4444" opacity={0.85} radius={[3, 3, 0, 0]} />
         <Bar yAxisId="left" dataKey="pf" name="Product Failures" fill="#f97316" opacity={0.85} radius={[3, 3, 0, 0]} />
-        <Line yAxisId="right" type="monotone" dataKey="amount" name="Refund Cost (KES)" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+        <Line yAxisId="right" type="monotone" dataKey="amount" name="Refund Cost (€)" stroke="#8b5cf6" strokeWidth={2} dot={false} />
       </ComposedChart>
     </ResponsiveContainer>
   )

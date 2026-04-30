@@ -14,8 +14,8 @@ interface Props {
 
 async function getStoreData(store: string) {
   const [refundsRes, pfRes, plansRes] = await Promise.all([
-    supabase.from('refunds').select('*').eq('store', store),
-    supabase.from('product_failures').select('*').eq('store', store),
+    supabase.from('refunds').select('*').eq('store', store).range(0, 9999),
+    supabase.from('product_failures').select('*').eq('store', store).range(0, 9999),
     supabase.from('action_plans').select('*').eq('store', store).order('priority').order('id'),
   ])
 
@@ -126,7 +126,7 @@ export async function StoreDetailPage({ store, slug }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Refund Incidents" value={fmt(totalRefunds)} sub={`~${fmt(avgWeeklyRefunds, 0)}/week avg`} color="red" />
         <StatCard label="Product Failures" value={fmt(totalPF)} sub={`${iiPct}% Inventory Inaccuracy`} color="orange" />
-        <StatCard label="Financial Loss" value={fmtKES(refundAmount)} sub={`~${fmtKES(avgWeeklyAmount)}/week avg`} color="blue" />
+        <StatCard label="Financial Loss (EUR)" value={fmtKES(refundAmount)} sub={`~${fmtKES(avgWeeklyAmount)}/week avg`} color="blue" />
         <StatCard label="Total nSFR" value={fmt(totalRefunds + totalPF)} sub="Combined incidents" color="purple" />
       </div>
 

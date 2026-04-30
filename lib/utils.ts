@@ -6,11 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function fmt(n: number, decimals = 0) {
-  return n.toLocaleString('en-KE', { maximumFractionDigits: decimals, minimumFractionDigits: decimals })
+  return n.toLocaleString('en-EU', { maximumFractionDigits: decimals, minimumFractionDigits: decimals })
 }
 
 export function fmtKES(n: number) {
-  return `KES ${n.toLocaleString('en-KE', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`
+  return `€${n.toLocaleString('en-EU', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`
 }
 
 export const STORES = ['NBOF1 - TimauRd', 'NBOF3 - Safari'] as const
