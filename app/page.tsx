@@ -11,11 +11,17 @@ export const revalidate = 0
 
 async function getOverviewData(dateFrom?: string, dateTo?: string) {
   const dr = { from: dateFrom, to: dateTo }
-  const [refunds, pfs, batchesRes] = await Promise.all([
+  const [refunds, pfs, batchesRes, ordersRes] = await Promise.all([
     fetchAll('refunds', 'store, ccr3, refund_and_comp, week, order_date', [], dr),
     fetchAll('product_failures', 'store, pf_root_cause, week, order_date', [], dr),
     supabase.from('upload_batches').select('*').order('uploaded_at', { ascending: false }).limit(1),
+    supabase.from('weekly_orders').select('week, store, total_orders').order('week'),
   ])
+
+  const ordersByWeekStore: Record<string, number> = {}
+  for (const o of (ordersRes.data ?? [])) {
+    ordersByWeekStore[`${o.week}:${o.store}`] = o.total_orders
+  }
 
   const stores = ['NBOF1 - TimauRd', 'NBOF3 - Safari'] as const
 
@@ -43,19 +49,38 @@ async function getOverviewData(dateFrom?: string, dateTo?: string) {
     return { store, refunds: sr.length, pf: sp.length, amount, trend }
   })
 
-  const combinedByWeek: Record<number, { week: number; nbof1_r: number; nbof1_pf: number; nbof3_r: number; nbof3_pf: number }> = {}
+  const combinedByWeek: Record<number, {
+    week: number
+    nbof1_r: number; nbof1_pf: number; nbof1_orders: number
+    nbof3_r: number; nbof3_pf: number; nbof3_orders: number
+  }> = {}
+
+  const ensureWeek = (w: number) => {
+    if (!combinedByWeek[w]) combinedByWeek[w] = {
+      week: w,
+      nbof1_r: 0, nbof1_pf: 0, nbof1_orders: ordersByWeekStore[`${w}:NBOF1 - TimauRd`] ?? 0,
+      nbof3_r: 0, nbof3_pf: 0, nbof3_orders: ordersByWeekStore[`${w}:NBOF3 - Safari`] ?? 0,
+    }
+  }
+
   refunds.forEach((r: { week?: number; store?: string }) => {
     if (!r.week) return
-    if (!combinedByWeek[r.week]) combinedByWeek[r.week] = { week: r.week, nbof1_r: 0, nbof1_pf: 0, nbof3_r: 0, nbof3_pf: 0 }
+    ensureWeek(r.week)
     if (r.store === 'NBOF1 - TimauRd') combinedByWeek[r.week].nbof1_r++
     else combinedByWeek[r.week].nbof3_r++
   })
   pfs.forEach((p: { week?: number; store?: string }) => {
     if (!p.week) return
-    if (!combinedByWeek[p.week]) combinedByWeek[p.week] = { week: p.week, nbof1_r: 0, nbof1_pf: 0, nbof3_r: 0, nbof3_pf: 0 }
+    ensureWeek(p.week)
     if (p.store === 'NBOF1 - TimauRd') combinedByWeek[p.week].nbof1_pf++
     else combinedByWeek[p.week].nbof3_pf++
   })
+
+  // Ensure all weeks with orders data appear even if no incidents
+  for (const o of (ordersRes.data ?? [])) {
+    ensureWeek(o.week)
+  }
+
   const combinedTrend = Object.values(combinedByWeek).sort((a, b) => a.week - b.week)
 
   const lastUpload = batchesRes.data?.[0] ?? null
@@ -105,7 +130,7 @@ export default async function OverviewPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Weekly nSFR Trend — Both Stores Combined</CardTitle>
+          <CardTitle>Weekly nSFR Rate — Both Stores (% of Total Orders)</CardTitle>
         </CardHeader>
         <CardContent>
           <OverviewCharts combinedTrend={combinedTrend} />

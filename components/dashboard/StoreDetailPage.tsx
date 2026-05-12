@@ -18,11 +18,17 @@ interface Props {
 
 async function getStoreData(store: string, dateFrom?: string, dateTo?: string) {
   const dr = { from: dateFrom, to: dateTo }
-  const [refunds, pfs, plansRes] = await Promise.all([
+  const [refunds, pfs, plansRes, ordersRes] = await Promise.all([
     fetchAll('refunds', '*', [{ column: 'store', value: store }], dr),
     fetchAll('product_failures', '*', [{ column: 'store', value: store }], dr),
     supabase.from('action_plans').select('*').eq('store', store).order('priority').order('id'),
+    supabase.from('weekly_orders').select('week, total_orders').eq('store', store).order('week'),
   ])
+
+  const ordersByWeek: Record<number, number> = {}
+  for (const o of (ordersRes.data ?? [])) {
+    ordersByWeek[o.week] = o.total_orders
+  }
 
   const plans = (plansRes.data ?? []) as ActionPlan[]
 
@@ -45,7 +51,7 @@ async function getStoreData(store: string, dateFrom?: string, dateTo?: string) {
   })
   const weeklyTrend = Object.entries(byWeek)
     .sort(([a], [b]) => Number(a) - Number(b))
-    .map(([week, v]) => ({ week: Number(week), ...v }))
+    .map(([week, v]) => ({ week: Number(week), ...v, totalOrders: ordersByWeek[Number(week)] ?? 0 }))
 
   // CCR3
   const ccr3Map: Record<string, number> = {}

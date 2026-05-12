@@ -5,7 +5,7 @@ import { DonutChart } from '@/components/charts/DonutChart'
 import { HorizontalBarChart } from '@/components/charts/HorizontalBarChart'
 
 interface Props {
-  weeklyTrend: { week: number; refunds: number; pf: number; amount: number }[]
+  weeklyTrend: { week: number; refunds: number; pf: number; amount: number; totalOrders?: number }[]
   ccr3Data: { name: string; value: number }[]
   pfData: { name: string; value: number }[]
   ccr3Colors: Record<string, string>
@@ -20,7 +20,7 @@ export function StoreCharts({ weeklyTrend, ccr3Data, pfData, ccr3Colors, pfColor
       {/* Weekly trend */}
       <Card>
         <CardHeader>
-          <CardTitle>Weekly nSFR Trend</CardTitle>
+          <CardTitle>Weekly nSFR Rate (% of Total Orders)</CardTitle>
         </CardHeader>
         <CardContent>
           <WeeklyTrendChart data={weeklyTrend} />
