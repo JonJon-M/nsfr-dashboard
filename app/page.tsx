@@ -3,14 +3,17 @@ import { fmtKES, fmt } from '@/lib/utils'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { OverviewCharts } from '@/components/dashboard/OverviewCharts'
+import { DateRangePicker } from '@/components/dashboard/DateRangePicker'
 import Link from 'next/link'
+import { Suspense } from 'react'
 
-export const revalidate = 60
+export const revalidate = 0
 
-async function getOverviewData() {
+async function getOverviewData(dateFrom?: string, dateTo?: string) {
+  const dr = { from: dateFrom, to: dateTo }
   const [refunds, pfs, batchesRes] = await Promise.all([
-    fetchAll('refunds', 'store, ccr3, refund_and_comp, week'),
-    fetchAll('product_failures', 'store, pf_root_cause, week'),
+    fetchAll('refunds', 'store, ccr3, refund_and_comp, week, order_date', [], dr),
+    fetchAll('product_failures', 'store, pf_root_cause, week, order_date', [], dr),
     supabase.from('upload_batches').select('*').order('uploaded_at', { ascending: false }).limit(1),
   ])
 
@@ -60,8 +63,17 @@ async function getOverviewData() {
   return { storeStats, combinedTrend, lastUpload, totalRefunds: refunds.length, totalPF: pfs.length, totalAmount }
 }
 
-export default async function OverviewPage() {
-  const { storeStats, combinedTrend, lastUpload, totalRefunds, totalPF, totalAmount } = await getOverviewData()
+export default async function OverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>
+}) {
+  const { from, to } = await searchParams
+  const { storeStats, combinedTrend, lastUpload, totalRefunds, totalPF, totalAmount } = await getOverviewData(from, to)
+
+  const dateLabel = from || to
+    ? `${from ?? '…'} → ${to ?? '…'}`
+    : 'All Weeks'
 
   return (
     <div className="space-y-6">
@@ -69,7 +81,7 @@ export default async function OverviewPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">nSFR Operations Dashboard</h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Non-Seamless Fulfilment Rate · NBOF1 TimauRd & NBOF3 Safari · All Weeks
+            Non-Seamless Fulfilment Rate · NBOF1 TimauRd & NBOF3 Safari · {dateLabel}
           </p>
         </div>
         {lastUpload && (
@@ -79,6 +91,10 @@ export default async function OverviewPage() {
           </div>
         )}
       </div>
+
+      <Suspense>
+        <DateRangePicker />
+      </Suspense>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total nSFR Incidents" value={fmt(totalRefunds + totalPF)} sub="Refunds + PF combined" color="red" />
@@ -100,8 +116,11 @@ export default async function OverviewPage() {
         {storeStats.map(s => {
           const slug = s.store.includes('TimauRd') ? 'nbof1' : 'nbof3'
           const maxVal = Math.max(...s.trend.map(x => x.refunds + x.pf), 1)
+          const storeLink = from || to
+            ? `/store/${slug}?${new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}) }).toString()}`
+            : `/store/${slug}`
           return (
-            <Link key={s.store} href={`/store/${slug}`}>
+            <Link key={s.store} href={storeLink}>
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all p-5 cursor-pointer group">
                 <div className="flex items-center justify-between mb-4">
                   <div>

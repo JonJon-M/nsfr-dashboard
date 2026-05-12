@@ -34,7 +34,8 @@ export function createServiceClient(): SupabaseClient {
 export async function fetchAll<T = Record<string, unknown>>(
   table: string,
   selectColumns: string,
-  filters: { column: string; value: string }[] = []
+  filters: { column: string; value: string }[] = [],
+  dateRange?: { from?: string; to?: string }
 ): Promise<T[]> {
   const PAGE = 1000
   let all: T[] = []
@@ -48,6 +49,13 @@ export async function fetchAll<T = Record<string, unknown>>(
 
     for (const f of filters) {
       query = query.eq(f.column, f.value) as typeof query
+    }
+
+    if (dateRange?.from) {
+      query = query.gte('order_date', dateRange.from) as typeof query
+    }
+    if (dateRange?.to) {
+      query = query.lte('order_date', dateRange.to) as typeof query
     }
 
     const { data, error } = await query

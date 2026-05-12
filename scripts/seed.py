@@ -80,8 +80,31 @@ def serial_to_dt(v):
             return None
     return None
 
-BATCH_ID = "seed_initial"
-FILE = "/Users/john/Downloads/nSFR Data.xlsx"
+BATCH_ID = "seed_v2_may2026"
+FILE = "/Users/john/Desktop/nSFR.xlsx"
+
+# ---- CLEAR EXISTING DATA ----
+def delete_all(table):
+    url = f"{SUPABASE_URL}/rest/v1/{table}?id=gte.0"
+    req = urllib.request.Request(url, headers={**HEADERS, "Prefer": "return=minimal"}, method="DELETE")
+    try:
+        with urllib.request.urlopen(req, context=ssl_ctx) as r:
+            print(f"  Cleared {table}: {r.status}")
+    except urllib.error.HTTPError as e:
+        body = e.read().decode()
+        # Fall back to delete-all via neq trick
+        url2 = f"{SUPABASE_URL}/rest/v1/{table}?upload_batch_id=neq.____never____"
+        req2 = urllib.request.Request(url2, headers={**HEADERS, "Prefer": "return=minimal"}, method="DELETE")
+        try:
+            with urllib.request.urlopen(req2, context=ssl_ctx) as r2:
+                print(f"  Cleared {table} (fallback): {r2.status}")
+        except Exception as e2:
+            print(f"  Clear {table} failed: {e2}")
+
+print("Clearing existing data...")
+delete_all("refunds")
+delete_all("product_failures")
+delete_all("upload_batches")
 
 print(f"Loading {FILE}...")
 wb = openpyxl.load_workbook(FILE)
@@ -135,7 +158,12 @@ for i in range(0, len(refund_rows), CHUNK):
     print(f"  Chunk {i//CHUNK + 1}/{(len(refund_rows)+CHUNK-1)//CHUNK}: {status}")
 
 # ---- PRODUCT FAILURES ----
-ws2 = wb["Product Failure"]
+# Sheet is "PFR" in the new file format
+pf_sheet_name = next((n for n in wb.sheetnames if "pfr" in n.lower() or "product failure" in n.lower() or "product_failure" in n.lower()), None)
+if not pf_sheet_name:
+    pf_sheet_name = wb.sheetnames[0] if len(wb.sheetnames) > 0 else "PFR"
+ws2 = wb[pf_sheet_name]
+print(f"Using PF sheet: {pf_sheet_name}")
 rows2 = list(ws2.iter_rows(values_only=True))
 headers2 = rows2[0]
 col2 = {h: i for i, h in enumerate(headers2)}

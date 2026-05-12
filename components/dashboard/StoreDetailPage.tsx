@@ -5,17 +5,22 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { PickerTable } from '@/components/dashboard/PickerTable'
 import { ActionPlanPanel } from '@/components/dashboard/ActionPlanPanel'
 import { StoreCharts } from '@/components/dashboard/StoreCharts'
+import { DateRangePicker } from '@/components/dashboard/DateRangePicker'
 import type { ActionPlan } from '@/lib/types'
+import { Suspense } from 'react'
 
 interface Props {
   store: string
   slug: 'nbof1' | 'nbof3'
+  dateFrom?: string
+  dateTo?: string
 }
 
-async function getStoreData(store: string) {
+async function getStoreData(store: string, dateFrom?: string, dateTo?: string) {
+  const dr = { from: dateFrom, to: dateTo }
   const [refunds, pfs, plansRes] = await Promise.all([
-    fetchAll('refunds', '*', [{ column: 'store', value: store }]),
-    fetchAll('product_failures', '*', [{ column: 'store', value: store }]),
+    fetchAll('refunds', '*', [{ column: 'store', value: store }], dr),
+    fetchAll('product_failures', '*', [{ column: 'store', value: store }], dr),
     supabase.from('action_plans').select('*').eq('store', store).order('priority').order('id'),
   ])
 
@@ -102,23 +107,33 @@ async function getStoreData(store: string) {
   return { totalRefunds, totalPF, refundAmount, weeklyTrend, ccr3Data, pfData, topSuppliers, topCategories, topPickers, topPFSkus, topRefundSkus, plans }
 }
 
-export async function StoreDetailPage({ store, slug }: Props) {
+export async function StoreDetailPage({ store, slug, dateFrom, dateTo }: Props) {
   const {
     totalRefunds, totalPF, refundAmount, weeklyTrend, ccr3Data, pfData,
     topSuppliers, topCategories, topPickers, topPFSkus, topRefundSkus, plans
-  } = await getStoreData(store)
+  } = await getStoreData(store, dateFrom, dateTo)
 
   const avgWeeklyRefunds = totalRefunds > 0 ? (totalRefunds / Math.max(weeklyTrend.length, 1)) : 0
   const avgWeeklyAmount = refundAmount > 0 ? (refundAmount / Math.max(weeklyTrend.length, 1)) : 0
   const iiPct = pfData.find(p => p.name === 'Inventory Inaccuracy') ? Math.round((pfData.find(p => p.name === 'Inventory Inaccuracy')!.value / totalPF) * 100) : 0
 
+  const dateLabel = dateFrom || dateTo
+    ? `${dateFrom ?? '…'} → ${dateTo ?? '…'}`
+    : 'All Weeks'
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{store}</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Full nSFR Analysis & Action Plans</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{store}</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Full nSFR Analysis & Action Plans · {dateLabel}</p>
+        </div>
       </div>
+
+      <Suspense>
+        <DateRangePicker />
+      </Suspense>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
