@@ -64,7 +64,9 @@ export function OverviewCharts({ combinedTrend }: Props) {
             contentStyle={{ fontSize: 11 }}
           />
           <Legend iconSize={8} />
-          <ReferenceLine y={5} stroke="#e2e8f0" strokeDasharray="4 4" label={{ value: '5%', fontSize: 9, fill: '#94a3b8' }} />
+          <ReferenceLine y={0.75} stroke="#f97316" strokeDasharray="4 3" label={{ value: 'PF 0.75%',   position: 'insideTopRight', fontSize: 9, fill: '#f97316' }} />
+          <ReferenceLine y={1.00} stroke="#ef4444" strokeDasharray="4 3" label={{ value: 'Ref 1.00%',  position: 'insideTopRight', fontSize: 9, fill: '#ef4444' }} />
+          <ReferenceLine y={1.75} stroke="#7c3aed" strokeDasharray="4 3" label={{ value: 'nSFR 1.75%', position: 'insideTopRight', fontSize: 9, fill: '#7c3aed' }} />
           <Bar dataKey="NBOF1 Refund %" stackId="n1" fill="#ef4444" opacity={0.85} radius={[0, 0, 0, 0]} />
           <Bar dataKey="NBOF1 PF %"     stackId="n1" fill="#fb923c" opacity={0.85} radius={[3, 3, 0, 0]} />
           <Bar dataKey="NBOF3 Refund %" stackId="n3" fill="#3b82f6" opacity={0.85} radius={[0, 0, 0, 0]} />
