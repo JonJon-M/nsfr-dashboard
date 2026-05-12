@@ -62,10 +62,12 @@ def serial_to_date(v):
     if isinstance(v, datetime):
         return v.date().isoformat()
     if isinstance(v, str):
-        try:
-            return datetime.strptime(v.split("T")[0], "%Y-%m-%d").date().isoformat()
-        except Exception:
-            return None
+        for fmt in ("%Y-%m-%d", "%b %d, %Y", "%B %d, %Y", "%d/%m/%Y", "%m/%d/%Y"):
+            try:
+                return datetime.strptime(v.split("T")[0].strip(), fmt).date().isoformat()
+            except ValueError:
+                continue
+        return None
     return None
 
 def serial_to_dt(v):

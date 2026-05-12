@@ -51,11 +51,13 @@ export async function fetchAll<T = Record<string, unknown>>(
       query = query.eq(f.column, f.value) as typeof query
     }
 
-    if (dateRange?.from) {
-      query = query.gte('order_date', dateRange.from) as typeof query
-    }
-    if (dateRange?.to) {
-      query = query.lte('order_date', dateRange.to) as typeof query
+    if (dateRange?.from && dateRange?.to) {
+      // include rows within range OR where order_date is unknown (NULL)
+      query = query.or(`and(order_date.gte.${dateRange.from},order_date.lte.${dateRange.to}),order_date.is.null`) as typeof query
+    } else if (dateRange?.from) {
+      query = query.or(`order_date.gte.${dateRange.from},order_date.is.null`) as typeof query
+    } else if (dateRange?.to) {
+      query = query.or(`order_date.lte.${dateRange.to},order_date.is.null`) as typeof query
     }
 
     const { data, error } = await query
